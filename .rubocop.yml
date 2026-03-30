@@ -23,7 +23,7 @@ Metrics/PerceivedComplexity:
 
 Metrics/BlockLength:
   Max: 30
-  IgnoredMethods:
+  AllowedMethods:
     - context
     - describe
     - it

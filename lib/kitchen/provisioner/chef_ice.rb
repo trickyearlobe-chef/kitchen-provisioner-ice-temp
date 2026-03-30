@@ -45,7 +45,7 @@ module Kitchen
 
       # Licence key for the commercial downloads API
       default_config :chef_license_key do |_p|
-        ENV['CHEF_LICENSE_KEY']
+        ENV.fetch('CHEF_LICENSE_KEY', nil)
       end
 
       default_config :product_version, 'latest'
@@ -97,6 +97,9 @@ module Kitchen
         # chef-ice license is handled by chef_license / chef_license_key
         # config passed to chef-client at run time.
       end
+
+      # Package cache — shared with chef-pkg at ~/.chef/cached-packages/
+      CACHE_ROOT = File.join(Dir.home, '.chef', 'cached-packages')
 
       private
 
@@ -307,15 +310,13 @@ module Kitchen
       end
 
       # ---------------------------------------------------------------
-      # Package cache — shared with chef-pkg at ~/.chef/cached-packages/
+      # Package cache
       #
       # Layout:
       #   ~/.chef/cached-packages/{platform}/{arch}/{pm}/chef-ice/{version}/
       #     chef-ice-19.2.12-1.amzn2.x86_64.rpm
       #     chef-ice-19.2.12-1.amzn2.x86_64.rpm.sha256
       # ---------------------------------------------------------------
-
-      CACHE_ROOT = File.join(Dir.home, '.chef', 'cached-packages')
 
       # Find a cached package file by scanning the cache subdirectory
       # for a file whose .sha256 sidecar matches the expected digest.
