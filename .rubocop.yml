@@ -1,0 +1,38 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.1
+  SuggestExtensions: false
+
+# Single-class provisioner plugin — the class is large by design.
+Metrics/ClassLength:
+  Max: 300
+
+# Several methods build shell scripts or walk API responses;
+# splitting them further would hurt readability.
+Metrics/MethodLength:
+  Max: 60
+
+Metrics/AbcSize:
+  Max: 45
+
+Metrics/CyclomaticComplexity:
+  Max: 15
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+Metrics/BlockLength:
+  Max: 30
+  IgnoredMethods:
+    - context
+    - describe
+    - it
+    - shared_examples
+    - shared_context
+  Exclude:
+    - spec/**/*
+    - "*.gemspec"
+
+# The class comment lives in the 20-line file header above the module.
+Style/Documentation:
+  Enabled: false

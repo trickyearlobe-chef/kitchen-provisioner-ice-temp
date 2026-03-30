@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Test Kitchen provisioner for Chef ICE (Chef Infra Client 19+).
 #
 # Thin layer on top of the existing ChefInfra provisioner from
@@ -18,15 +20,13 @@
 # appear in the shell script, and the license key never leaves
 # the workstation.
 
-require "kitchen/provisioner/chef_infra"
-require_relative "chef_ice/version"
-require "json"
-require "net/http"
-require "uri"
-require "fileutils"
-require "digest"
-
-
+require 'kitchen/provisioner/chef_infra'
+require_relative 'chef_ice/version'
+require 'json'
+require 'net/http'
+require 'uri'
+require 'fileutils'
+require 'digest'
 
 module Kitchen
   module Provisioner
@@ -41,16 +41,16 @@ module Kitchen
       default_config :require_chef_omnibus, false
 
       # Commercial downloads API base URL
-      default_config :downloads_api_url, "https://commercial-acceptance.downloads.chef.co"
+      default_config :downloads_api_url, 'https://commercial-acceptance.downloads.chef.co'
 
       # Licence key for the commercial downloads API
       default_config :chef_license_key do |_p|
-        ENV["CHEF_LICENSE_KEY"]
+        ENV['CHEF_LICENSE_KEY']
       end
 
-      default_config :product_version, "latest"
-      default_config :channel, "stable"
-      default_config :install_strategy, "once"   # once, always, skip
+      default_config :product_version, 'latest'
+      default_config :channel, 'stable'
+      default_config :install_strategy, 'once' # once, always, skip
       default_config :download_url, nil
       default_config :checksum, nil
 
@@ -66,7 +66,7 @@ module Kitchen
       # uploaded alongside cookbooks, data bags, etc.
       def create_sandbox
         super
-        return if config[:install_strategy] == "skip"
+        return if config[:install_strategy] == 'skip'
 
         prepare_package
       end
@@ -77,7 +77,7 @@ module Kitchen
       # We only use it for the guard check — actual install happens
       # in prepare_command after the package file has been uploaded.
       def install_command
-        return if config[:install_strategy] == "skip"
+        return if config[:install_strategy] == 'skip'
 
         prefix_command(wrap_shell_code(install_guard))
       end
@@ -85,7 +85,7 @@ module Kitchen
       # prepare_command runs AFTER sandbox upload and BEFORE run_command.
       # The package file(s) are now on the node under root_path.
       def prepare_command
-        return if config[:install_strategy] == "skip"
+        return if config[:install_strategy] == 'skip'
         return unless @package_files && !@package_files.empty?
 
         prefix_command(wrap_shell_code(install_package_script))
@@ -113,10 +113,10 @@ module Kitchen
           download_from_api
         else
           raise UserError,
-            "chef_license_key is required to download chef-ice from the " \
-            "commercial downloads API. Set it in kitchen.yml or via the " \
-            "CHEF_LICENSE_KEY env var. Alternatively, set download_url to " \
-            "point at a local package."
+                'chef_license_key is required to download chef-ice from the ' \
+                'commercial downloads API. Set it in kitchen.yml or via the ' \
+                'CHEF_LICENSE_KEY env var. Alternatively, set download_url to ' \
+                'point at a local package.'
         end
       end
 
@@ -143,7 +143,7 @@ module Kitchen
 
         # Only download formats the target platform can use.
         formats = windows_os? ? %w[msi] : %w[rpm deb]
-        platform = windows_os? ? "windows" : "linux"
+        platform = windows_os? ? 'windows' : 'linux'
 
         @package_files = []
 
@@ -152,12 +152,12 @@ module Kitchen
             detail = pm_map[pm]
             next unless detail
 
-            url    = detail["url"]
-            sha256 = detail["sha256"]
+            url    = detail['url']
+            sha256 = detail['sha256']
 
             # Check the shared Chef Workstation cache first.
             # Layout: ~/.chef/cached-packages/{platform}/{arch}/{pm}/chef-ice/{version}/
-            cache_subdir = File.join(platform, arch, pm, "chef-ice", version)
+            cache_subdir = File.join(platform, arch, pm, 'chef-ice', version)
             cached = find_in_cache(cache_subdir, sha256)
 
             if cached
@@ -169,7 +169,7 @@ module Kitchen
               # Download to a temp location, resolve real filename from
               # Content-Disposition header, then move into cache.
               info("  Downloading chef-ice #{version} #{pm} (#{arch})")
-              tmpfile = File.join(sandbox_path, "chef-ice-download.tmp")
+              tmpfile = File.join(sandbox_path, 'chef-ice-download.tmp')
               real_name = http_download(URI.parse(url), tmpfile)
 
               # Use Content-Disposition filename if we got one,
@@ -182,13 +182,11 @@ module Kitchen
               store_in_cache(dest, cache_subdir, sha256)
             end
 
-            @package_files << { arch: arch, pm: pm, filename: filename }
+            @package_files << { arch:, pm:, filename: }
           end
         end
 
-        if @package_files.empty?
-          raise UserError, "No downloadable packages found for chef-ice #{version}"
-        end
+        raise UserError, "No downloadable packages found for chef-ice #{version}" if @package_files.empty?
       end
 
       # ---------------------------------------------------------------
@@ -197,17 +195,17 @@ module Kitchen
 
       # GET a JSON endpoint from the commercial downloads API.
       def api_get(path, params = {})
-        params["license_id"] = config[:chef_license_key]
+        params['license_id'] = config[:chef_license_key]
         uri = URI.parse("#{config[:downloads_api_url]}#{path}")
         uri.query = URI.encode_www_form(params)
 
         response = http_get_follow(uri, 5)
 
         unless response.is_a?(Net::HTTPSuccess)
-          safe_uri = uri.to_s.gsub(config[:chef_license_key].to_s, "****")
+          safe_uri = uri.to_s.gsub(config[:chef_license_key].to_s, '****')
           raise UserError,
-            "Chef downloads API returned #{response.code}: " \
-            "#{response.body.strip} (#{safe_uri})"
+                "Chef downloads API returned #{response.code}: " \
+                "#{response.body.strip} (#{safe_uri})"
         end
 
         JSON.parse(response.body)
@@ -216,21 +214,21 @@ module Kitchen
       # Resolve "latest" to a concrete version string.
       def resolve_version
         version = config[:product_version]
-        return version unless version.nil? || version == "latest"
+        return version unless version.nil? || version == 'latest'
 
         channel  = config[:channel]
         versions = api_get("/#{channel}/chef-ice/versions/all")
 
         raise UserError, "No versions found for chef-ice on #{channel} channel" if versions.empty?
 
-        versions.sort_by { |v| Gem::Version.new(v) }.last
+        versions.max_by { |v| Gem::Version.new(v) }
       end
 
       # Fetch the packages map and merge all platform keys.
       # Returns: { "x86_64" => { "rpm" => { ... }, "deb" => { ... } }, ... }
       def fetch_packages(version)
         channel  = config[:channel]
-        response = api_get("/#{channel}/chef-ice/packages", "v" => version)
+        response = api_get("/#{channel}/chef-ice/packages", 'v' => version)
 
         merged = {}
         response.each_value do |arch_map|
@@ -247,18 +245,16 @@ module Kitchen
         merged
       end
 
-
-
       # ---------------------------------------------------------------
       # HTTP helpers
       # ---------------------------------------------------------------
 
       # GET with redirect following — returns the response object.
       def http_get_follow(uri, limit)
-        raise UserError, "Too many HTTP redirects" if limit <= 0
+        raise UserError, 'Too many HTTP redirects' if limit <= 0
 
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = (uri.scheme == "https")
+        http.use_ssl = (uri.scheme == 'https')
         http.open_timeout = 10
         http.read_timeout = 30
 
@@ -266,7 +262,7 @@ module Kitchen
 
         case response
         when Net::HTTPRedirection
-          http_get_follow(URI.parse(response["location"]), limit - 1)
+          http_get_follow(URI.parse(response['location']), limit - 1)
         else
           response
         end
@@ -277,25 +273,24 @@ module Kitchen
       def http_download(uri, dest, limit = 5)
         raise UserError, "Too many HTTP redirects downloading #{File.basename(dest)}" if limit <= 0
 
-        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
+        Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
           request = Net::HTTP::Get.new(uri)
           http.request(request) do |response|
             case response
             when Net::HTTPRedirection
-              return http_download(URI.parse(response["location"]), dest, limit - 1)
+              return http_download(URI.parse(response['location']), dest, limit - 1)
             when Net::HTTPSuccess
-              File.open(dest, "wb") do |f|
+              File.open(dest, 'wb') do |f|
                 response.read_body { |chunk| f.write(chunk) }
               end
               # Extract filename from Content-Disposition if present
-              cd = response["content-disposition"]
-              if cd && cd =~ /filename=["']?([^"';\s]+)/
-                return $1
-              end
+              cd = response['content-disposition']
+              return Regexp.last_match(1) if cd && cd =~ /filename=["']?([^"';\s]+)/
+
               return nil
             else
               raise UserError,
-                "Failed to download #{File.basename(dest)}: HTTP #{response.code}"
+                    "Failed to download #{File.basename(dest)}: HTTP #{response.code}"
             end
           end
         end
@@ -307,8 +302,8 @@ module Kitchen
         return if actual == expected
 
         raise UserError,
-          "Checksum mismatch for #{File.basename(path)}: " \
-          "expected #{expected}, got #{actual}"
+              "Checksum mismatch for #{File.basename(path)}: " \
+              "expected #{expected}, got #{actual}"
       end
 
       # ---------------------------------------------------------------
@@ -320,7 +315,7 @@ module Kitchen
       #     chef-ice-19.2.12-1.amzn2.x86_64.rpm.sha256
       # ---------------------------------------------------------------
 
-      CACHE_ROOT = File.join(Dir.home, ".chef", "cached-packages")
+      CACHE_ROOT = File.join(Dir.home, '.chef', 'cached-packages')
 
       # Find a cached package file by scanning the cache subdirectory
       # for a file whose .sha256 sidecar matches the expected digest.
@@ -330,8 +325,8 @@ module Kitchen
         return nil unless File.directory?(dir)
         return nil if expected_sha256.nil? || expected_sha256.empty?
 
-        Dir.glob(File.join(dir, "*")).each do |path|
-          next if path.end_with?(".sha256")
+        Dir.glob(File.join(dir, '*')).each do |path|
+          next if path.end_with?('.sha256')
 
           sidecar = "#{path}.sha256"
           next unless File.exist?(sidecar)
@@ -386,11 +381,11 @@ module Kitchen
         <<~SH
           echo "-----> Installing Chef ICE from uploaded package"
           case "#{remote_pkg}" in
-            *.deb) #{sudo("dpkg")} -i "#{remote_pkg}" || #{sudo("apt-get")} install -fy ;;
+            *.deb) #{sudo('dpkg')} -i "#{remote_pkg}" || #{sudo('apt-get')} install -fy ;;
             *.rpm)
-              if command -v dnf >/dev/null 2>&1; then #{sudo("dnf")} install -y "#{remote_pkg}"
-              elif command -v yum >/dev/null 2>&1; then #{sudo("yum")} install -y "#{remote_pkg}"
-              else #{sudo("rpm")} -Uvh "#{remote_pkg}"
+              if command -v dnf >/dev/null 2>&1; then #{sudo('dnf')} install -y "#{remote_pkg}"
+              elif command -v yum >/dev/null 2>&1; then #{sudo('yum')} install -y "#{remote_pkg}"
+              else #{sudo('rpm')} -Uvh "#{remote_pkg}"
               fi ;;
             *.msi) msiexec /qn /i "#{remote_pkg}" ;;
             *) echo "ERROR: unknown package format" >&2; exit 1 ;;
@@ -425,27 +420,27 @@ module Kitchen
           pm_lines = []
           files.each do |pf|
             remote = remote_path_join(root, pf[:filename])
-            keyword = pm_lines.empty? ? "if" : "elif"
+            keyword = pm_lines.empty? ? 'if' : 'elif'
             case pf[:pm]
-            when "rpm"
+            when 'rpm'
               pm_lines << "    #{keyword} command -v rpm >/dev/null 2>&1; then"
-              pm_lines << "      if command -v dnf >/dev/null 2>&1; then #{sudo("dnf")} install -y \"#{remote}\""
-              pm_lines << "      elif command -v yum >/dev/null 2>&1; then #{sudo("yum")} install -y \"#{remote}\""
-              pm_lines << "      else #{sudo("rpm")} -Uvh \"#{remote}\""
-              pm_lines << "      fi"
-            when "deb"
+              pm_lines << "      if command -v dnf >/dev/null 2>&1; then #{sudo('dnf')} install -y \"#{remote}\""
+              pm_lines << "      elif command -v yum >/dev/null 2>&1; then #{sudo('yum')} install -y \"#{remote}\""
+              pm_lines << "      else #{sudo('rpm')} -Uvh \"#{remote}\""
+              pm_lines << '      fi'
+            when 'deb'
               pm_lines << "    #{keyword} command -v dpkg >/dev/null 2>&1; then"
-              pm_lines << "      #{sudo("dpkg")} -i \"#{remote}\" || #{sudo("apt-get")} install -fy"
-            when "msi"
+              pm_lines << "      #{sudo('dpkg')} -i \"#{remote}\" || #{sudo('apt-get')} install -fy"
+            when 'msi'
               pm_lines << "    #{keyword} command -v msiexec >/dev/null 2>&1; then"
               pm_lines << "      msiexec /qn /i \"#{remote}\""
             end
           end
           unless pm_lines.empty?
-            pm_lines << "    else"
-            pm_lines << "      echo \"ERROR: no supported package manager found\" >&2"
-            pm_lines << "      exit 1"
-            pm_lines << "    fi"
+            pm_lines << '    else'
+            pm_lines << '      echo "ERROR: no supported package manager found" >&2'
+            pm_lines << '      exit 1'
+            pm_lines << '    fi'
           end
           case_lines << "  #{arch})\n#{pm_lines.join("\n")}\n    ;;"
         end
