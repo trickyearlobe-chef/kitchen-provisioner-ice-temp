@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+
+      - name: Build gem
+        run: make build
+
+      - name: Configure RubyGems Trusted Publisher
+        uses: rubygems/configure-rubygems-credentials@main
+        with:
+          gem-server: https://rubygems.org
+
+      - name: Publish gem
+        run: |
+          for gem in pkg/*.gem; do gem push "$gem"; done
