@@ -3,7 +3,7 @@
 module Kitchen
   module Provisioner
     CHEF_ICE_VERSION = begin
-      dir = File.expand_path("../../..", __dir__)
+      dir = File.expand_path("../../../..", __dir__)
       if File.directory?(File.join(dir, ".git"))
         tag = `git -C #{dir} describe --tags --match 'v*' 2>/dev/null`.strip
         tag.empty? ? "0.0.0" : tag.sub(/^v/, "").sub(/-(\d+)-g/, '.\1.dev.')
