@@ -2,11 +2,11 @@
 
 lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "kitchen/provisioner/ice_temp/version"
+require "kitchen/provisioner/chef_ice/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "kitchen-provisioner-ice-temp"
-  spec.version       = Kitchen::Provisioner::ICE_TEMP_VERSION
+  spec.version       = Kitchen::Provisioner::CHEF_ICE_VERSION
   spec.authors       = ["Richard Nixon"]
   spec.email         = ["richard.nixon@btinternet.com"]
   spec.summary       = "TEMPORARY Test Kitchen provisioner for Chef ICE (Chef Infra Client 19+)"
@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
 
   spec.post_install_message = <<~MSG
     ┌──────────────────────────────────────────────────────────────────┐
-    │ kitchen-provisioner-ice-temp is a TEMPORARY stopgap gem.        │
+    │ kitchen-provisioner-ice-temp is a TEMPORARY stopgap gem.         │
     │                                                                  │
     │ Once Chef Workstation ships with native chef-ice support,        │
     │ uninstall this gem and switch to the built-in provisioner:       │

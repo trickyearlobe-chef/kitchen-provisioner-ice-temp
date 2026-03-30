@@ -1,4 +1,4 @@
-# Test Kitchen provisioner for ICE Temp (Chef Infra Client 19+).
+# Test Kitchen provisioner for Chef ICE (Chef Infra Client 19+).
 #
 # Thin layer on top of the existing ChefInfra provisioner from
 # kitchen-omnibus-chef. Only overrides the install path to use the
@@ -19,7 +19,7 @@
 # the workstation.
 
 require "kitchen/provisioner/chef_infra"
-require_relative "ice_temp/version"
+require_relative "chef_ice/version"
 require "json"
 require "net/http"
 require "uri"
@@ -30,13 +30,13 @@ require "digest"
 
 module Kitchen
   module Provisioner
-    class IceTemp < ChefInfra
+    class ChefIce < ChefInfra
       kitchen_provisioner_api_version 2
 
-      plugin_version Kitchen::Provisioner::ICE_TEMP_VERSION
+      plugin_version Kitchen::Provisioner::CHEF_ICE_VERSION
 
       # Do NOT set product_name — it triggers mixlib-install validation
-      # in the parent which doesn't know about ice-temp.
+      # in the parent which doesn't know about chef-ice.
       # Instead we set require_chef_omnibus to false and handle install ourselves.
       default_config :require_chef_omnibus, false
 
@@ -62,7 +62,7 @@ module Kitchen
 
       # --- sandbox --------------------------------------------------
 
-      # Download the ice-temp package into the sandbox so it gets
+      # Download the chef-ice package into the sandbox so it gets
       # uploaded alongside cookbooks, data bags, etc.
       def create_sandbox
         super
@@ -94,7 +94,7 @@ module Kitchen
       # Skip the parent's license check which goes through
       # license-acceptance gem with product names it may not recognise.
       def check_license
-        # ice-temp license is handled by chef_license / chef_license_key
+        # chef-ice license is handled by chef_license / chef_license_key
         # config passed to chef-client at run time.
       end
 
@@ -113,7 +113,7 @@ module Kitchen
           download_from_api
         else
           raise UserError,
-            "chef_license_key is required to download ice-temp from the " \
+            "chef_license_key is required to download chef-ice from the " \
             "commercial downloads API. Set it in kitchen.yml or via the " \
             "CHEF_LICENSE_KEY env var. Alternatively, set download_url to " \
             "point at a local package."
@@ -126,7 +126,7 @@ module Kitchen
         name = File.basename(URI.parse(url).path)
         dest = File.join(sandbox_path, name)
 
-        info("Downloading ice-temp from #{url}")
+        info("Downloading chef-ice from #{url}")
         http_download(URI.parse(url), dest)
         verify_sha256(dest, config[:checksum]) if config[:checksum]
 
@@ -139,7 +139,7 @@ module Kitchen
         version  = resolve_version
         packages = fetch_packages(version)
 
-        info("ICE Temp #{version} (license: ****)")
+        info("Chef ICE #{version} (license: ****)")
 
         # Only download formats the target platform can use.
         formats = windows_os? ? %w[msi] : %w[rpm deb]
@@ -156,8 +156,8 @@ module Kitchen
             sha256 = detail["sha256"]
 
             # Check the shared Chef Workstation cache first.
-            # Layout: ~/.chef/cached-packages/{platform}/{arch}/{pm}/ice-temp/{version}/
-            cache_subdir = File.join(platform, arch, pm, "ice-temp", version)
+            # Layout: ~/.chef/cached-packages/{platform}/{arch}/{pm}/chef-ice/{version}/
+            cache_subdir = File.join(platform, arch, pm, "chef-ice", version)
             cached = find_in_cache(cache_subdir, sha256)
 
             if cached
@@ -168,13 +168,13 @@ module Kitchen
             else
               # Download to a temp location, resolve real filename from
               # Content-Disposition header, then move into cache.
-              info("  Downloading ice-temp #{version} #{pm} (#{arch})")
-              tmpfile = File.join(sandbox_path, "ice-temp-download.tmp")
+              info("  Downloading chef-ice #{version} #{pm} (#{arch})")
+              tmpfile = File.join(sandbox_path, "chef-ice-download.tmp")
               real_name = http_download(URI.parse(url), tmpfile)
 
               # Use Content-Disposition filename if we got one,
               # otherwise fall back to a constructed name.
-              filename = real_name || "ice-temp-#{version}-#{arch}.#{pm}"
+              filename = real_name || "chef-ice-#{version}-#{arch}.#{pm}"
               dest = File.join(sandbox_path, filename)
               FileUtils.mv(tmpfile, dest) if File.exist?(tmpfile)
 
@@ -187,7 +187,7 @@ module Kitchen
         end
 
         if @package_files.empty?
-          raise UserError, "No downloadable packages found for ice-temp #{version}"
+          raise UserError, "No downloadable packages found for chef-ice #{version}"
         end
       end
 
@@ -219,9 +219,9 @@ module Kitchen
         return version unless version.nil? || version == "latest"
 
         channel  = config[:channel]
-        versions = api_get("/#{channel}/ice-temp/versions/all")
+        versions = api_get("/#{channel}/chef-ice/versions/all")
 
-        raise UserError, "No versions found for ice-temp on #{channel} channel" if versions.empty?
+        raise UserError, "No versions found for chef-ice on #{channel} channel" if versions.empty?
 
         versions.sort_by { |v| Gem::Version.new(v) }.last
       end
@@ -230,7 +230,7 @@ module Kitchen
       # Returns: { "x86_64" => { "rpm" => { ... }, "deb" => { ... } }, ... }
       def fetch_packages(version)
         channel  = config[:channel]
-        response = api_get("/#{channel}/ice-temp/packages", "v" => version)
+        response = api_get("/#{channel}/chef-ice/packages", "v" => version)
 
         merged = {}
         response.each_value do |arch_map|
@@ -242,7 +242,7 @@ module Kitchen
           end
         end
 
-        raise UserError, "No packages found for ice-temp #{version}" if merged.empty?
+        raise UserError, "No packages found for chef-ice #{version}" if merged.empty?
 
         merged
       end
@@ -315,9 +315,9 @@ module Kitchen
       # Package cache — shared with chef-pkg at ~/.chef/cached-packages/
       #
       # Layout:
-      #   ~/.chef/cached-packages/{platform}/{arch}/{pm}/ice-temp/{version}/
-      #     ice-temp-19.2.12-1.amzn2.x86_64.rpm
-      #     ice-temp-19.2.12-1.amzn2.x86_64.rpm.sha256
+      #   ~/.chef/cached-packages/{platform}/{arch}/{pm}/chef-ice/{version}/
+      #     chef-ice-19.2.12-1.amzn2.x86_64.rpm
+      #     chef-ice-19.2.12-1.amzn2.x86_64.rpm.sha256
       # ---------------------------------------------------------------
 
       CACHE_ROOT = File.join(Dir.home, ".chef", "cached-packages")
@@ -362,7 +362,7 @@ module Kitchen
       def install_guard
         <<~SH
           if [ -x "#{config[:chef_client_path]}" ]; then
-            echo "-----> ICE Temp already installed, skipping"
+            echo "-----> Chef ICE already installed, skipping"
             exit 0
           fi
         SH
@@ -384,7 +384,7 @@ module Kitchen
       # Install a single known package file.
       def install_single_package(remote_pkg)
         <<~SH
-          echo "-----> Installing ICE Temp from uploaded package"
+          echo "-----> Installing Chef ICE from uploaded package"
           case "#{remote_pkg}" in
             *.deb) #{sudo("dpkg")} -i "#{remote_pkg}" || #{sudo("apt-get")} install -fy ;;
             *.rpm)
@@ -411,7 +411,7 @@ module Kitchen
 
         script = []
         script << <<~SH
-          echo "-----> Installing ICE Temp from uploaded package"
+          echo "-----> Installing Chef ICE from uploaded package"
           machine="$(uname -m)"
           case "$machine" in
             x86_64|amd64)  arch="x86_64" ;;
@@ -454,7 +454,7 @@ module Kitchen
           case "$arch" in
           #{case_lines.join("\n")}
             *)
-              echo "ERROR: no ice-temp package for architecture $arch" >&2
+              echo "ERROR: no chef-ice package for architecture $arch" >&2
               exit 1
               ;;
           esac

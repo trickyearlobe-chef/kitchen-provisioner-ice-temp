@@ -1,5 +1,3 @@
-GEM_NAME := kitchen-provisioner-ice-temp
-
 CURRENT_VERSION := $(shell git describe --tags --match 'v*' --abbrev=0 2>/dev/null | sed 's/^v//')
 ifeq ($(CURRENT_VERSION),)
   CURRENT_VERSION := 0.0.0
@@ -8,15 +6,16 @@ MAJOR := $(word 1,$(subst ., ,$(CURRENT_VERSION)))
 MINOR := $(word 2,$(subst ., ,$(CURRENT_VERSION)))
 PATCH := $(word 3,$(subst ., ,$(CURRENT_VERSION)))
 
-.PHONY: help test build install clean version bump-patch bump-minor bump-major release
+.PHONY: help all spec style clean install bump-patch bump-minor bump-major release version
 
 .DEFAULT_GOAL := help
 
 help:
 	@echo "Usage: make <target>"
 	@echo ""
-	@echo "  test         Run rspec tests"
-	@echo "  build        Build the gem into pkg/"
+	@echo "  spec         Run rspec tests"
+	@echo "  style        Run rubocop"
+	@echo "  all          Run spec + style"
 	@echo "  install      Build and install the gem locally"
 	@echo "  clean        Remove build artifacts"
 	@echo "  version      Show current version (from git tags)"
@@ -25,19 +24,21 @@ help:
 	@echo "  bump-major   Tag a major release  (X+1.0.0)"
 	@echo "  release      Push main and tags to origin"
 
-test:
-	rspec
+all: spec style
 
-build: clean
-	gem build $(GEM_NAME).gemspec
-	mkdir -p pkg
-	mv $(GEM_NAME)-*.gem pkg/
+install:
+	chef exec gem build kitchen-provisioner-ice-temp.gemspec
+	chef exec gem install kitchen-provisioner-ice-temp-*.gem
+	rm -f kitchen-provisioner-ice-temp-*.gem
 
-install: build
-	gem install pkg/$(GEM_NAME)-*.gem
+spec:
+	chef exec rspec
+
+style:
+	chef exec rubocop
 
 clean:
-	rm -rf pkg/ tmp/ coverage/ $(GEM_NAME)-*.gem
+	rm -rf pkg/ tmp/ coverage/ kitchen-provisioner-ice-temp-*.gem
 
 version:
 	@echo $(CURRENT_VERSION)

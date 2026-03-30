@@ -2,7 +2,7 @@
 
 module Kitchen
   module Provisioner
-    ICE_TEMP_VERSION = begin
+    CHEF_ICE_VERSION = begin
       dir = File.expand_path("../../..", __dir__)
       if File.directory?(File.join(dir, ".git"))
         tag = `git -C #{dir} describe --tags --match 'v*' 2>/dev/null`.strip

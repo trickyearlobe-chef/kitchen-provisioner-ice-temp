@@ -1,7 +1,7 @@
 require "kitchen"
-require "kitchen/provisioner/ice_temp"
+require "kitchen/provisioner/chef_ice"
 
-RSpec.describe Kitchen::Provisioner::IceTemp do
+RSpec.describe Kitchen::Provisioner::ChefIce do
   let(:logged_output) { StringIO.new }
   let(:logger)        { Logger.new(logged_output) }
 
@@ -158,16 +158,16 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
     end
 
     context "with a single download_url package" do
-      let(:config) { super().merge(download_url: "https://mirror.example.com/ice-temp-19.deb") }
+      let(:config) { super().merge(download_url: "https://mirror.example.com/chef-ice-19.deb") }
 
       before do
         # Simulate download_from_url having run
-        subject.instance_variable_set(:@package_files, [{ filename: "ice-temp-19.deb" }])
+        subject.instance_variable_set(:@package_files, [{ filename: "chef-ice-19.deb" }])
       end
 
       it "generates a script that installs from a local file" do
         cmd = subject.prepare_command
-        expect(cmd).to include("ice-temp-19.deb")
+        expect(cmd).to include("chef-ice-19.deb")
         expect(cmd).to include("dpkg")
       end
 
@@ -184,9 +184,9 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
       before do
         subject.instance_variable_set(:@package_files, [
-          { arch: "x86_64", pm: "rpm", filename: "ice-temp-19.2.12-x86_64.rpm" },
-          { arch: "x86_64", pm: "deb", filename: "ice-temp-19.2.12-x86_64.deb" },
-          { arch: "aarch64", pm: "rpm", filename: "ice-temp-19.2.12-aarch64.rpm" },
+          { arch: "x86_64", pm: "rpm", filename: "chef-ice-19.2.12-x86_64.rpm" },
+          { arch: "x86_64", pm: "deb", filename: "chef-ice-19.2.12-x86_64.deb" },
+          { arch: "aarch64", pm: "rpm", filename: "chef-ice-19.2.12-aarch64.rpm" },
         ])
       end
 
@@ -211,9 +211,9 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
       it "references local package filenames" do
         cmd = subject.prepare_command
-        expect(cmd).to include("ice-temp-19.2.12-x86_64.rpm")
-        expect(cmd).to include("ice-temp-19.2.12-x86_64.deb")
-        expect(cmd).to include("ice-temp-19.2.12-aarch64.rpm")
+        expect(cmd).to include("chef-ice-19.2.12-x86_64.rpm")
+        expect(cmd).to include("chef-ice-19.2.12-x86_64.deb")
+        expect(cmd).to include("chef-ice-19.2.12-aarch64.rpm")
       end
 
       it "does not contain any URLs" do
@@ -251,7 +251,7 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
     context "with download_url" do
       let(:config) do
-        super().merge(download_url: "https://mirror.example.com/ice-temp-19.2.12.rpm")
+        super().merge(download_url: "https://mirror.example.com/chef-ice-19.2.12.rpm")
       end
 
       it "downloads the file into the sandbox" do
@@ -263,7 +263,7 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
         expect(subject).to have_received(:http_download).with(
           an_instance_of(URI::HTTPS),
-          a_string_ending_with("ice-temp-19.2.12.rpm")
+          a_string_ending_with("chef-ice-19.2.12.rpm")
         )
       end
     end
@@ -274,10 +274,10 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
       before do
         allow(subject).to receive(:api_get)
-          .with("/stable/ice-temp/versions/all")
+          .with("/stable/chef-ice/versions/all")
           .and_return(fake_versions_response)
         allow(subject).to receive(:api_get)
-          .with("/stable/ice-temp/packages", "v" => "19.2.12")
+          .with("/stable/chef-ice/packages", "v" => "19.2.12")
           .and_return(fake_packages_response)
         allow(subject).to receive(:http_download)
         allow(subject).to receive(:verify_sha256)
@@ -288,13 +288,13 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
       it "resolves the latest version" do
         subject.create_sandbox
         expect(subject).to have_received(:api_get)
-          .with("/stable/ice-temp/versions/all")
+          .with("/stable/chef-ice/versions/all")
       end
 
       it "fetches the packages metadata" do
         subject.create_sandbox
         expect(subject).to have_received(:api_get)
-          .with("/stable/ice-temp/packages", "v" => "19.2.12")
+          .with("/stable/chef-ice/packages", "v" => "19.2.12")
       end
 
       it "downloads packages for all arch/pm combos" do
@@ -321,14 +321,14 @@ RSpec.describe Kitchen::Provisioner::IceTemp do
 
         before do
           allow(subject).to receive(:api_get)
-            .with("/stable/ice-temp/packages", "v" => "19.1.164")
+            .with("/stable/chef-ice/packages", "v" => "19.1.164")
             .and_return(fake_packages_response)
         end
 
         it "does not call the versions endpoint" do
           subject.create_sandbox
           expect(subject).not_to have_received(:api_get)
-            .with("/stable/ice-temp/versions/all")
+            .with("/stable/chef-ice/versions/all")
         end
       end
     end

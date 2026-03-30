@@ -29,7 +29,7 @@ gem "kitchen-provisioner-ice-temp"
 
 ```yaml
 provisioner:
-  name: ice_temp
+  name: chef_ice
   product_version: 19.2.12      # or "latest"
   channel: stable
   chef_license_key: "your-key"  # or set CHEF_LICENSE_KEY env var
@@ -40,7 +40,7 @@ provisioner:
 
 ```yaml
 provisioner:
-  name: ice_temp
+  name: chef_ice
   download_url: https://my-mirror.example.com/chef-ice-19.2.12-1_amd64.deb
   checksum: abc123...            # optional SHA-256
   chef_license: accept
@@ -50,7 +50,7 @@ provisioner:
 
 ```yaml
 provisioner:
-  name: ice_temp
+  name: chef_ice
   install_strategy: skip
   chef_license: accept
 ```
@@ -77,15 +77,7 @@ When a future Chef Workstation ships with native chef-ice support:
    chef exec gem uninstall kitchen-provisioner-ice-temp
    ```
 
-2. **Update `kitchen.yml`** — change the provisioner name from `ice_temp` to whatever the new built-in provisioner is called (likely `chef_ice` or `chef_infra` with a `product_name: chef-ice` option):
-
-   ```yaml
-   provisioner:
-     name: chef_ice          # or chef_infra — check the Chef Workstation release notes
-     product_version: 19.2.12
-     chef_license_key: "your-key"
-     chef_license: accept
-   ```
+2. **Update `kitchen.yml`** — the provisioner name `chef_ice` won't change, but check the Chef Workstation release notes in case the built-in provisioner uses a different name.
 
 3. **Remove from Gemfile** (if listed):
 

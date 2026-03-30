@@ -1,35 +1,37 @@
-name: Release
+name: Publish Gem
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       id-token: write
+
+    environment: release
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: "3.3"
+
+      - name: Configure RubyGems trusted publishing credentials
+        uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
 
       - name: Build gem
-        run: make build
+        run: gem build kitchen-provisioner-ice-temp.gemspec
 
-      - name: Configure RubyGems Trusted Publisher
-        uses: rubygems/configure-rubygems-credentials@main
-        with:
-          gem-server: https://rubygems.org
+      - name: Push to RubyGems
+        run: gem push kitchen-provisioner-ice-temp-*.gem
 
-      - name: Publish gem
-        run: |
-          for gem in pkg/*.gem; do gem push "$gem"; done
+      - name: Wait for release to propagate
+        run: gem exec rubygems-await kitchen-provisioner-ice-temp-*.gem
