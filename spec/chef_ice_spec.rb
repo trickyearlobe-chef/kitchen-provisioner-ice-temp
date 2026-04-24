@@ -2,6 +2,53 @@
 
 require 'kitchen'
 require 'kitchen/provisioner/chef_ice'
+require 'kitchen/provisioner/chef-ice'
+
+# ---------------------------------------------------------------
+# Hyphenated name shim — chef-ice → chef_ice
+# ---------------------------------------------------------------
+
+RSpec.describe 'chef-ice hyphenated name shim' do
+  it 'remaps chef-ice to chef_ice via for_plugin' do
+    config = { kitchen_root: '/tmp', test_base_path: '/tmp/test', name: 'chef-ice' }
+    instance = instance_double(
+      'Kitchen::Instance',
+      name: 'default-ubuntu-2204',
+      logger: Logger.new(StringIO.new),
+      suite: instance_double('Kitchen::Suite', name: 'default'),
+      platform: instance_double('Kitchen::Platform', os_type: nil, shell_type: nil, name: 'ubuntu-22.04'),
+      transport: instance_double('Kitchen::Transport::Base'),
+      driver: instance_double('Kitchen::Driver::Base', cache_directory: nil),
+      to_str: 'default-ubuntu-2204'
+    )
+    config[:instance] = instance
+
+    provisioner = Kitchen::Provisioner.for_plugin('chef-ice', config)
+    expect(provisioner).to be_a(Kitchen::Provisioner::ChefIce)
+  end
+
+  it 'still works with the underscored chef_ice name' do
+    config = { kitchen_root: '/tmp', test_base_path: '/tmp/test', name: 'chef_ice' }
+    instance = instance_double(
+      'Kitchen::Instance',
+      name: 'default-ubuntu-2204',
+      logger: Logger.new(StringIO.new),
+      suite: instance_double('Kitchen::Suite', name: 'default'),
+      platform: instance_double('Kitchen::Platform', os_type: nil, shell_type: nil, name: 'ubuntu-22.04'),
+      transport: instance_double('Kitchen::Transport::Base'),
+      driver: instance_double('Kitchen::Driver::Base', cache_directory: nil),
+      to_str: 'default-ubuntu-2204'
+    )
+    config[:instance] = instance
+
+    provisioner = Kitchen::Provisioner.for_plugin('chef_ice', config)
+    expect(provisioner).to be_a(Kitchen::Provisioner::ChefIce)
+  end
+end
+
+# ---------------------------------------------------------------
+# Main provisioner specs
+# ---------------------------------------------------------------
 
 RSpec.describe Kitchen::Provisioner::ChefIce do
   let(:logged_output) { StringIO.new }
@@ -92,6 +139,7 @@ RSpec.describe Kitchen::Provisioner::ChefIce do
       expect(subject[:require_chef_omnibus]).to eq(false)
     end
 
+
     it 'sets downloads_api_url' do
       expect(subject[:downloads_api_url]).to eq('https://commercial-acceptance.downloads.chef.co')
     end
@@ -137,6 +185,7 @@ RSpec.describe Kitchen::Provisioner::ChefIce do
         cmd = subject.install_command
         expect(cmd).not_to include('http')
       end
+
     end
   end
 
@@ -178,6 +227,7 @@ RSpec.describe Kitchen::Provisioner::ChefIce do
         expect(cmd).not_to include('http')
         expect(cmd).not_to include('license')
       end
+
     end
 
     context 'with API-downloaded multi-arch packages' do
@@ -222,6 +272,7 @@ RSpec.describe Kitchen::Provisioner::ChefIce do
         cmd = subject.prepare_command
         expect(cmd).not_to include('http')
       end
+
 
       it 'does not contain the license key' do
         cmd = subject.prepare_command
