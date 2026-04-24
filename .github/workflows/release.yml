@@ -1,4 +1,4 @@
-name: Publish Gem
+name: Build Gem
 
 on:
   push:
@@ -6,14 +6,11 @@ on:
       - "v*"
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      id-token: write
-
-    environment: release
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -24,14 +21,19 @@ jobs:
         with:
           ruby-version: "3.3"
 
-      - name: Configure RubyGems trusted publishing credentials
-        uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
-
       - name: Build gem
         run: gem build kitchen-provisioner-ice-temp.gemspec
 
-      - name: Push to RubyGems
-        run: gem push kitchen-provisioner-ice-temp-*.gem
-
-      - name: Wait for release to propagate
-        run: gem exec rubygems-await kitchen-provisioner-ice-temp-*.gem
+      # RubyGems publishing is disabled for now.
+      # To re-enable, uncomment the steps below and add:
+      #   permissions: id-token: write
+      #   environment: release
+      #
+      # - name: Configure RubyGems trusted publishing credentials
+      #   uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
+      #
+      # - name: Push to RubyGems
+      #   run: gem push kitchen-provisioner-ice-temp-*.gem
+      #
+      # - name: Wait for release to propagate
+      #   run: gem exec rubygems-await kitchen-provisioner-ice-temp-*.gem
